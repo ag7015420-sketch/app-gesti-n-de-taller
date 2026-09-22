@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!--
+  ============================================================
+  Oficina LH — Cortes · index.html (archivo único, sin frameworks)
+  Firebase Firestore SDK modular v12.19.0 (CDN gstatic)
+  Colecciones: "cortes" y "firmas"  (las firmas empiezan vacías)
+
+  Reglas sugeridas de Firestore:
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /cortes/{doc} { allow read, write: if true; }
+        match /firmas/{doc} { allow read, write: if true; }
+      }
+    }
+  ============================================================
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7C3AED">
+<meta name="format-detection" content="telephone=no">
+<title>Oficina LH — Cortes</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237C3AED'/%3E%3Ctext x='32' y='42' font-family='Arial' font-size='24' font-weight='bold' fill='white' text-anchor='middle'%3ELH%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --primario:#7C3AED;
+    --primario-osc:#6D28D9;
+    --primario-suave:#EDE9FE;
+    --fondo:#F4F2FA;
+    --texto:#111827;
+    --texto-2:#6B7280;
+    --blanco:#FFFFFF;
+    --verde:#059669;
+    --verde-suave:#D1FAE5;
+    --verde-texto:#065F46;
+    --naranja:#EA580C;
+    --naranja-suave:#FFEDD5;
+    --naranja-texto:#9A3412;
+    --rojo:#DC2626;
+    --rojo-suave:#FEE2E2;
+    --rojo-texto:#991B1B;
+    --radio:16px;
+    --sombra:0 1px 2px rgba(17,24,39,.05),0 4px 16px rgba(124,58,237,.07);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--fondo);color:var(--texto);min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;user-select:none}
+  input,select,textarea{font-family:inherit}
+  button:disabled{opacity:.55;cursor:default}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--primario);outline-offset:2px}
+  .app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:132px}
+  .oculto{display:none!important}
+
+  /* ---------- Encabezado ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 16px;background:rgba(244,242,250,.86);
+    backdrop-filter:blur(14px) saturate(1.6);-webkit-backdrop-filter:blur(14px) saturate(1.6);
+    border-bottom:1px solid rgba(124,58,237,.08);
+  }
+  .topbar h1{font-size:20px;font-weight:800;color:var(--primario);letter-spacing:-.3px}
+  .topbar p{font-size:12.5px;color:var(--texto-2);margin-top:1px}
+  .icon-btn{
+    width:42px;height:42px;border:none;border-radius:13px;background:var(--primario-suave);color:var(--primario);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .12s;
+  }
+  .icon-btn:active{transform:scale(.92)}
+
+  /* ---------- Contenido ---------- */
+  main{padding:14px 16px 0;display:flex;flex-direction:column;gap:14px}
+
+  /* Selector de mes */
+  .mes-barra{display:flex;align-items:center;gap:8px;background:var(--blanco);border-radius:var(--radio);padding:8px;box-shadow:var(--sombra)}
+  .mes-barra button{
+    width:42px;height:42px;border:none;border-radius:12px;background:var(--primario-suave);color:var(--primario);
+    display:flex;align-items:center;justify-content:center;transition:transform .12s;
+  }
+  .mes-barra button:active{transform:scale(.92)}
+  #mesEtiqueta{flex:1;text-align:center;font-weight:800;font-size:16px;letter-spacing:-.2px}
+
+  /* Tarjetas resumen */
+  .tarjetas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tarjeta{background:var(--blanco);border-radius:var(--radio);padding:14px;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:4px;min-width:0}
+  .tarjeta>span{font-size:11.5px;font-weight:700;color:var(--texto-2);text-transform:uppercase;letter-spacing:.5px}
+  .tarjeta strong{font-size:20px;font-weight:800;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tarjeta.total strong{color:var(--primario)}
+  .tarjeta.cobrar strong{color:var(--naranja)}
+  .tarjeta.ticket strong{color:var(--verde)}
+
+  /* Alerta de cobro urgente */
+  .alerta{display:flex;align-items:center;gap:12px;background:#FFF1F2;border:1px solid #FECDD3;border-radius:var(--radio);padding:12px 14px}
+  .alerta-icono{
+    width:38px;height:38px;border-radius:12px;background:var(--rojo);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;flex-shrink:0;
+  }
+  .alerta-texto{min-width:0;flex:1}
+  .alerta h3{font-size:14px;font-weight:800;color:var(--rojo-texto)}
+  .alerta p{font-size:12.5px;color:#9F1239;margin-top:2px;line-height:1.4}
+  .alerta button{border:none;background:var(--rojo);color:#fff;font-weight:800;font-size:12.5px;padding:10px 14px;border-radius:11px;flex-shrink:0;transition:transform .12s}
+  .alerta button:active{transform:scale(.94)}
+
+  /* Sección genérica */
+  .tarjeta-seccion{background:var(--blanco);border-radius:var(--radio);padding:14px;box-shadow:var(--sombra)}
+  .titulo-seccion{font-size:14px;font-weight:800;margin-bottom:10px}
+  .hint{font-size:13px;color:var(--texto-2);line-height:1.55}
+
+  /* Resumen por firma */
+  .fila-firma{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F3F0FA}
+  .fila-firma:last-child{border-bottom:none;padding-bottom:0}
+  .fila-firma:first-child{padding-top:0}
+  .avatar-firma{width:36px;height:36px;border-radius:50%;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .av-0{background:var(--primario-suave);color:var(--primario)}
+  .av-1{background:#DBEAFE;color:#1D4ED8}
+  .av-2{background:var(--verde-suave);color:var(--verde-texto)}
+  .av-3{background:var(--naranja-suave);color:var(--naranja-texto)}
+  .ff-info{min-width:0;flex:1}
+  .fila-firma .nombre{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fila-firma .sub{font-size:12px;color:var(--texto-2);margin-top:1px}
+  .sub-cobrar{color:var(--naranja);font-weight:700}
+  .fila-firma .monto{margin-left:auto;font-weight:800;font-size:14px;color:var(--primario);flex-shrink:0}
+
+  /* Filtros */
+  .filtros{display:flex;flex-direction:column;gap:8px}
+  .buscador{
+    width:100%;padding:12px 14px;border:none;border-radius:13px;background:var(--blanco);box-shadow:var(--sombra);
+    font-size:16px;color:var(--texto);outline:none;-webkit-appearance:none;appearance:none;
+  }
+  .buscador::placeholder{color:#9CA3AF}
+  .fila-filtros{display:flex;gap:8px}
+  .fila-filtros select,.campo select{
+    flex:1;min-width:0;padding:12px 34px 12px 12px;border:none;border-radius:13px;
+    background:var(--blanco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C3AED' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center/13px;
+    box-shadow:var(--sombra);font-size:14px;font-weight:600;color:var(--texto);
+    appearance:none;-webkit-appearance:none;outline:none;
+  }
+  .campo select{width:100%;box-shadow:none;background-color:#EFEDF5}
+
+  /* Lista de cortes */
+  .lista{display:flex;flex-direction:column;gap:10px}
+  .corte{background:var(--blanco);border-radius:var(--radio);padding:14px;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:9px}
+  .corte-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .corte-info{min-width:0;flex:1}
+  .corte-prenda{font-size:16.5px;font-weight:800;letter-spacing:-.2px;overflow-wrap:anywhere}
+  .corte-firma{font-size:12.5px;color:var(--primario-osc);font-weight:600;margin-top:2px}
+  .insignia{font-size:11.5px;font-weight:800;padding:6px 11px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+  .insignia.pagado{background:var(--verde-suave);color:var(--verde-texto)}
+  .insignia.por_cobrar{background:linear-gradient(135deg,#F97316,#EA580C);color:#fff;box-shadow:0 2px 8px rgba(234,88,12,.32)}
+  .corte-medio{display:flex;align-items:baseline;justify-content:space-between;gap:10px;background:#FAF9FE;border-radius:12px;padding:10px 12px}
+  .corte-detalle{font-size:13px;color:var(--texto-2);font-weight:600}
+  .corte-total{font-size:19px;font-weight:800;color:var(--primario);letter-spacing:-.4px;white-space:nowrap}
+  .corte-fecha{font-size:12.5px;color:var(--texto-2)}
+  .corte-obs{font-size:13px;color:#4B5563;background:#F9FAFB;border-radius:10px;padding:8px 11px;line-height:1.45;overflow-wrap:anywhere}
+  .corte-acciones{display:flex;gap:8px;margin-top:2px}
+  .btn-a{flex:1;border:none;border-radius:11px;padding:11px 8px;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .12s}
+  .btn-a:active{transform:scale(.96)}
+  .btn-pagar{background:var(--verde);color:#fff}
+  .btn-editar{background:var(--primario-suave);color:var(--primario-osc)}
+  .btn-borrar{background:var(--rojo-suave);color:var(--rojo)}
+
+  /* Estados (cargando / vacío / error) */
+  .estado{background:var(--blanco);border-radius:var(--radio);padding:30px 20px;text-align:center;box-shadow:var(--sombra);display:flex;flex-direction:column;align-items:center;gap:4px}
+  .estado svg{margin-bottom:8px}
+  .estado h3{font-size:15.5px;font-weight:800}
+  .estado p{font-size:13.5px;color:var(--texto-2);line-height:1.5}
+  .btn-reintentar{margin-top:14px;border:none;background:var(--primario);color:#fff;font-weight:800;font-size:14px;padding:12px 24px;border-radius:12px}
+  .spinner{width:26px;height:26px;border:3px solid var(--primario-suave);border-top-color:var(--primario);border-radius:50%;margin-bottom:8px;animation:girar .8s linear infinite}
+  @keyframes girar{to{transform:rotate(360deg)}}
+
+  /* Botón flotante + */
+  .fab{
+    position:fixed;right:max(18px,calc(50% - 242px));bottom:calc(18px + env(safe-area-inset-bottom));
+    width:66px;height:66px;border:none;border-radius:50%;
+    background:linear-gradient(145deg,#8B5CF6,#7C3AED);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 26px rgba(124,58,237,.45),0 2px 6px rgba(124,58,237,.3);
+    z-index:60;transition:transform .15s;
+  }
+  .fab:active{transform:scale(.9)}
+  .fab svg{width:30px;height:30px}
+
+  /* ---------- Overlays y hojas ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:80;display:flex;justify-content:center;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+  .overlay.open{opacity:1;visibility:visible}
+  .overlay.centro{align-items:center;padding:24px}
+  .hoja{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--fondo);border-radius:22px 22px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(40px);transition:transform .26s}
+  .overlay.open .hoja{transform:translateY(0)}
+  .asa{width:40px;height:5px;border-radius:3px;background:#D8D4E8;margin:6px auto 14px}
+  .hoja h2{font-size:18px;font-weight:800;margin-bottom:14px;letter-spacing:-.3px}
+  body.bloqueado{overflow:hidden}
+
+  /* Menú hamburguesa */
+  .menu-item{display:flex;align-items:center;gap:13px;width:100%;background:var(--blanco);border:none;border-radius:14px;padding:14px;box-shadow:var(--sombra);margin-bottom:8px;text-align:left;transition:transform .12s}
+  .menu-item:active{transform:scale(.98)}
+  .mi-icono{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .mi-texto{flex:1;min-width:0}
+  .mi-texto strong{display:block;font-size:14.5px}
+  .mi-texto span{display:block;font-size:12px;color:var(--texto-2);margin-top:1px}
+
+  /* Formularios */
+  .campo{margin-bottom:13px}
+  .campo label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#374151}
+  .campo input,.campo textarea{
+    width:100%;padding:12px 13px;border:2px solid transparent;border-radius:13px;background:#EFEDF5;
+    font-size:16px;color:var(--texto);outline:none;transition:border-color .15s,background .15s;
+  }
+  .campo textarea{resize:vertical;min-height:56px}
+  .campo input:focus,.campo textarea:focus,.campo select:focus{border-color:var(--primario);background:var(--blanco)}
+  .campo input::placeholder,.campo textarea::placeholder{color:#9CA3AF}
+  .fila-dos{display:flex;gap:10px}
+  .fila-dos .campo{flex:1;min-width:0}
+  .total-vista{background:var(--primario-suave);border-radius:13px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+  .total-vista span{font-size:13px;font-weight:800;color:var(--primario-osc);text-transform:uppercase;letter-spacing:.5px}
+  .total-vista strong{font-size:22px;font-weight:800;color:var(--primario);letter-spacing:-.5px}
+  .estado-opciones{display:flex;gap:10px}
+  .estado-btn{flex:1;border:2px solid #E5E7EB;border-radius:13px;padding:14px 8px;background:var(--blanco);font-size:14.5px;font-weight:800;color:var(--texto-2);display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+  .estado-btn.sel-pagado{background:var(--verde);border-color:var(--verde);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)}
+  .estado-btn.sel-cobrar{background:linear-gradient(135deg,#F97316,#EA580C);border-color:#EA580C;color:#fff;box-shadow:0 4px 14px rgba(234,88,12,.3)}
+  .acciones-form{display:flex;gap:10px;margin-top:16px}
+  .acciones-form button{flex:1;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:800;transition:transform .12s}
+  .acciones-form button:active{transform:scale(.97)}
+  .btn-primario{background:linear-gradient(145deg,#8B5CF6,#7C3AED);color:#fff;box-shadow:0 6px 18px rgba(124,58,237,.35)}
+  .btn-secundario{background:#E9E6F2;color:#4B5563}
+  .btn-cerrar{width:100%;border:none;border-radius:14px;padding:14px;font-size:14.5px;font-weight:800;margin-top:6px}
+  .aviso{background:#FEF3C7;border:1px solid #FDE68A;color:#92400E;border-radius:13px;padding:12px 14px;font-size:13.5px;line-height:1.5;margin-bottom:13px;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+  .aviso button{border:none;background:#92400E;color:#fff;font-weight:800;font-size:12.5px;padding:9px 13px;border-radius:9px}
+
+  /* Gestión de firmas */
+  .fila-gestion{background:var(--blanco);border-radius:14px;padding:12px 14px;box-shadow:var(--sombra);display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .fg-info{min-width:0;flex:1}
+  .fg-nombre{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fg-sub{font-size:12px;color:var(--texto-2);margin-top:1px;overflow-wrap:anywhere}
+  .fg-btns{display:flex;gap:6px;flex-shrink:0}
+  .btn-mini{border:none;border-radius:10px;padding:9px 12px;font-size:12.5px;font-weight:800;transition:transform .12s}
+  .btn-mini:active{transform:scale(.94)}
+  .btn-mini-editar{background:var(--primario-suave);color:var(--primario-osc)}
+  .btn-mini-borrar{background:var(--rojo-suave);color:var(--rojo)}
+  .btn-nueva-firma{width:100%;border:none;border-radius:14px;padding:14px;background:var(--primario-suave);color:var(--primario-osc);font-size:14.5px;font-weight:800;margin-top:6px;transition:transform .12s}
+  .btn-nueva-firma:active{transform:scale(.98)}
+
+  /* Pagos urgentes */
+  .fila-urgente{background:var(--blanco);border-radius:14px;padding:12px 14px;box-shadow:var(--sombra);margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+  .fu-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .fu-prenda{font-weight:800;font-size:14.5px;overflow-wrap:anywhere}
+  .fu-monto{font-weight:800;color:var(--naranja);white-space:nowrap}
+  .fu-meta{font-size:12.5px;color:var(--texto-2)}
+
+  /* Ayuda */
+  .ayuda-lista{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
+  .ayuda-lista li{background:var(--blanco);border-radius:13px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:#374151;box-shadow:var(--sombra);display:flex;gap:10px;align-items:flex-start}
+  .num{background:var(--primario-suave);color:var(--primario);width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+  /* Acerca de */
+  .acerca-caja{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;background:var(--blanco);border-radius:var(--radio);padding:24px 18px;box-shadow:var(--sombra);margin-bottom:12px}
+  .logo-app{width:64px;height:64px;border-radius:18px;background:linear-gradient(145deg,#8B5CF6,#7C3AED);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:6px;box-shadow:0 8px 20px rgba(124,58,237,.35)}
+  .acerca-nombre{font-size:16.5px;font-weight:800}
+
+  /* Diálogo de confirmación */
+  .dialogo{width:100%;max-width:320px;background:var(--blanco);border-radius:18px;padding:22px 18px 14px;text-align:center;transform:scale(.92);transition:transform .2s}
+  .overlay.open .dialogo{transform:scale(1)}
+  .dialogo p{font-size:15px;font-weight:600;line-height:1.45;margin-bottom:18px;overflow-wrap:anywhere}
+  .dialogo-botones{display:flex;gap:10px}
+  .dialogo-botones button{flex:1;border:none;border-radius:12px;padding:13px;font-size:14.5px;font-weight:800}
+  .btn-dialogo-cancelar{background:#F1EFF7;color:#374151}
+  .btn-dialogo-ok{background:var(--rojo);color:#fff}
+
+  /* Toast */
+  .toast{
+    position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(16px);
+    background:rgba(17,24,39,.92);color:#fff;font-size:13.5px;font-weight:600;
+    padding:12px 18px;border-radius:999px;opacity:0;visibility:hidden;transition:all .25s;
+    z-index:120;max-width:88%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast.ver{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ Encabezado ============ -->
+  <header class="topbar">
+    <div>
+      <h1>Oficina LH - Cortes</h1>
+      <p>Registro de cortes de salida</p>
+    </div>
+    <button id="btnMenu" class="icon-btn" aria-label="Abrir menú">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <!-- ============ Selector de mes ============ -->
+    <section class="mes-barra">
+      <button id="btnMesAnt" aria-label="Mes anterior">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div id="mesEtiqueta">—</div>
+      <button id="btnMesSig" aria-label="Mes siguiente">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </section>
+
+    <!-- ============ 4 tarjetas resumen ============ -->
+    <section class="tarjetas">
+      <div class="tarjeta total"><span>Total hecho</span><strong id="statTotal">R$ 0,00</strong></div>
+      <div class="tarjeta cobrar"><span>Por cobrar</span><strong id="statCobrar">R$ 0,00</strong></div>
+      <div class="tarjeta"><span>Cortes</span><strong id="statCant">0</strong></div>
+      <div class="tarjeta ticket"><span>Ticket promedio</span><strong id="statTicket">R$ 0,00</strong></div>
+    </section>
+
+    <!-- ============ Alerta por cobrar urgente (> 5 días) ============ -->
+    <section id="alertaUrgente" class="alerta oculto"></section>
+
+    <!-- ============ Resumen por firma ============ -->
+    <section class="tarjeta-seccion">
+      <h2 class="titulo-seccion">Resumen por firma</h2>
+      <div id="resumenFirmas"></div>
+    </section>
+
+    <!-- ============ Filtros ============ -->
+    <section class="filtros">
+      <input id="inpBuscar" class="buscador" type="search" placeholder="Buscar por prenda o firma..." autocomplete="off">
+      <div class="fila-filtros">
+        <select id="filtroFirma" aria-label="Filtrar por firma"></select>
+        <select id="filtroPago" aria-label="Filtrar por estado de pago">
+          <option value="todos">Todos los pagos</option>
+          <option value="pagado">Pagados</option>
+          <option value="por_cobrar">Por cobrar</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- ============ Lista de cortes del mes ============ -->
+    <section id="listaCortes" class="lista"></section>
+  </main>
+
+  <!-- ============ Botón flotante + (acción principal) ============ -->
+  <button id="fab" class="fab" aria-label="Agregar corte">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ============ Hoja: Menú hamburguesa ============ -->
+<div class="overlay" id="overlayMenu">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2>Menú</h2>
+    <button type="button" class="menu-item" data-menu="firmas">
+      <span class="mi-icono av-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </span>
+      <span class="mi-texto"><strong>Gestionar firmas</strong><span>Agrega, edita o elimina firmas</span></span>
+    </button>
+    <button type="button" class="menu-item" data-menu="ayuda">
+      <span class="mi-icono av-1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
+      <span class="mi-texto"><strong>Ayuda rápida</strong><span>Cómo usar la app</span></span>
+    </button>
+    <button type="button" class="menu-item" data-menu="acerca">
+      <span class="mi-icono av-2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </span>
+      <span class="mi-texto"><strong>Acerca de</strong><span>Información de la app</span></span>
+    </button>
+  </div>
+</div>
+
+<!-- ============ Hoja: Formulario de corte (agregar / editar) ============ -->
+<div class="overlay" id="overlayForm">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2 id="formTitulo">Nuevo corte</h2>
+    <div id="avisoSinFirmas" class="aviso oculto">
+      <span>Aún no hay firmas registradas. Crea una firma para poder guardar cortes.</span>
+      <button id="btnIrFirmas" type="button">Gestionar firmas</button>
+    </div>
+    <form id="formCorte" novalidate>
+      <div class="campo">
+        <label for="selFirma">Firma</label>
+        <select id="selFirma"></select>
+      </div>
+      <div class="campo">
+        <label for="inpPrenda">Tipo de prenda</label>
+        <input id="inpPrenda" type="text" placeholder="Ej.: Jeans skinny" autocomplete="off">
+      </div>
+      <div class="fila-dos">
+        <div class="campo">
+          <label for="inpCantidad">Cantidad</label>
+          <input id="inpCantidad" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+        </div>
+        <div class="campo">
+          <label for="inpValor">Valor por pieza</label>
+          <input id="inpValor" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+        </div>
+      </div>
+      <div class="total-vista"><span>Total</span><strong id="totalVista">R$ 0,00</strong></div>
+      <div class="campo">
+        <label for="inpFecha">Fecha de salida</label>
+        <input id="inpFecha" type="date">
+      </div>
+      <div class="campo">
+        <label for="inpObs">Observación</label>
+        <textarea id="inpObs" rows="2" placeholder="Opcional"></textarea>
+      </div>
+      <div class="campo">
+        <label>Estado de pago</label>
+        <div class="estado-opciones">
+          <button type="button" id="btnEstPagado" class="estado-btn">✓ Pagado</button>
+          <button type="button" id="btnEstCobrar" class="estado-btn">$ Por cobrar</button>
+        </div>
+      </div>
+      <div class="acciones-form">
+        <button type="submit" id="btnGuardarCorte" class="btn-primario">Guardar corte</button>
+        <button type="button" id="btnSecCorte" class="btn-secundario">Limpiar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Hoja: Gestionar firmas ============ -->
+<div class="overlay" id="overlayFirmas">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2>Gestionar firmas</h2>
+    <div id="listaFirmas"></div>
+    <button type="button" id="btnNuevaFirma" class="btn-nueva-firma">+ Nueva firma</button>
+    <form id="formFirma" novalidate class="oculto" style="margin-top:12px">
+      <div class="campo">
+        <label for="inpNombreFirma">Nombre de la firma</label>
+        <input id="inpNombreFirma" type="text" placeholder="Ej.: Oficina LH" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="inpCnpjFirma">Número CNPJ</label>
+        <input id="inpCnpjFirma" type="text" placeholder="Opcional" autocomplete="off">
+      </div>
+      <div class="acciones-form" style="margin-top:4px">
+        <button type="submit" id="btnGuardarFirma" class="btn-primario">Guardar firma</button>
+        <button type="button" id="btnCancelarFirma" class="btn-secundario">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Hoja: Pagos urgentes ============ -->
+<div class="overlay" id="overlayUrgente">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2>Pagos por cobrar urgentes</h2>
+    <p class="hint" style="margin-bottom:12px">Cortes por cobrar con más de 5 días desde la fecha de salida.</p>
+    <div id="listaUrgentes"></div>
+    <button type="button" class="btn-secundario btn-cerrar" data-cerrar="overlayUrgente">Cerrar</button>
+  </div>
+</div>
+
+<!-- ============ Hoja: Ayuda rápida ============ -->
+<div class="overlay" id="overlayAyuda">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2>Ayuda rápida</h2>
+    <ul class="ayuda-lista">
+      <li><span class="num">1</span><span>Toca el botón <b>+</b> (abajo a la derecha) para registrar un corte.</span></li>
+      <li><span class="num">2</span><span>Elige la firma y completa prenda, cantidad y valor por pieza. El <b>total se calcula automáticamente</b>.</span></li>
+      <li><span class="num">3</span><span>Toca <b>«Marcar pagado»</b> en una tarjeta cuando recibas el pago.</span></li>
+      <li><span class="num">4</span><span>Cambia de mes con las flechas <b>←</b> y <b>→</b>. Todo el resumen se actualiza según el mes elegido.</span></li>
+      <li><span class="num">5</span><span>Usa los filtros para buscar por prenda o firma, y para ver solo pagados o por cobrar.</span></li>
+      <li><span class="num">6</span><span>Crea y administra tus firmas desde <b>Menú → Gestionar firmas</b>.</span></li>
+    </ul>
+    <button type="button" class="btn-secundario btn-cerrar" data-cerrar="overlayAyuda">Cerrar</button>
+  </div>
+</div>
+
+<!-- ============ Hoja: Acerca de ============ -->
+<div class="overlay" id="overlayAcerca">
+  <div class="hoja">
+    <div class="asa"></div>
+    <h2>Acerca de</h2>
+    <div class="acerca-caja">
+      <div class="logo-app">LH</div>
+      <strong class="acerca-nombre">Oficina LH — Cortes</strong>
+      <p class="hint">Registro de cortes de salida</p>
+      <p class="hint">Versión 2.0</p>
+      <p class="hint">Tus datos se guardan en Firebase Firestore.</p>
+    </div>
+    <button type="button" class="btn-secundario btn-cerrar" data-cerrar="overlayAcerca">Cerrar</button>
+  </div>
+</div>
+
+<!-- ============ Diálogo de confirmación ============ -->
+<div class="overlay centro" id="overlayConfirm">
+  <div class="dialogo">
+    <p id="confirmMsg"></p>
+    <div class="dialogo-botones">
+      <button id="btnConfirmCancelar" class="btn-dialogo-cancelar" type="button">Cancelar</button>
+      <button id="btnConfirmOk" class="btn-dialogo-ok" type="button">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toast ============ -->
+<div id="toast" class="toast" role="status"></div>
+<script type="module">
+/* ================================================================
+   Oficina LH — Cortes · v2.0
+   Firmas dinámicas (colección "firmas", empiezan vacías)
+   Sin códigos de corte · Dashboard completo al entrar
+================================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, updateDoc,
+  deleteDoc, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAwdWD0CmtMWnIANAug-y3lORZEFsLZC9o",
+  authDomain: "gestion-de-cortes.firebaseapp.com",
+  projectId: "gestion-de-cortes",
+  storageBucket: "gestion-de-cortes.firebasestorage.app",
+  messagingSenderId: "225668372590",
+  appId: "1:225668372590:web:6d1228899cbdffba73ae7f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ============ Estado en memoria ============ */
+const state = {
+  firmas: [],              // { id, nombre, cnpj, creadoEn }
+  cortes: [],              // { id, firmaId, firmaNombre, tipoPrenda, cantidad, valorPorPieza, total, fechaSalida, fechaEntrada, observacion, estadoPago, creadoEn }
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),   // 0-11
+  search: "",
+  firmaFilter: "todas",
+  pagoFilter: "todos",
+  editandoCorteId: null,
+  editandoFirmaId: null,
+  estadoForm: "por_cobrar",
+  cargado: false,
+  errorCarga: false
+};
+
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MONEDA = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const $ = (id) => document.getElementById(id);
+
+const SVG_TIJERAS = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/></svg>';
+const SVG_ALERTA = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10.29 3.86-8.02 14.01A2 2 0 0 0 4 21h16a2 2 0 0 0 1.71-3.13L13.7 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+/* ============ Utilidades ============ */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtBRL = (v) => MONEDA.format(Number(v) || 0);
+
+function hoyISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function fmtFecha(iso){
+  if(!iso) return "";
+  const p = String(iso).split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : "";
+}
+function parseDia(iso){
+  const p = String(iso).split("-").map(Number);
+  return new Date(p[0], (p[1] || 1) - 1, p[2] || 1);
+}
+function diasDesde(iso){
+  if(!iso) return 0;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((hoy - parseDia(iso)) / 86400000);
+}
+function relEtiqueta(iso){
+  const d = diasDesde(iso);
+  if(d === 0) return "Hoy";
+  if(d === 1) return "Ayer";
+  if(d > 1) return `Hace ${d} días`;
+  if(d === -1) return "Mañana";
+  return `En ${-d} días`;
+}
+const mesEtiqueta = () => `${MESES[state.month]} ${state.year}`;
+
+function parseNum(v){
+  v = String(v ?? "").trim();
+  if(!v) return 0;
+  if(v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+function ordenarCortes(arr){
+  return arr.slice().sort((a, b) => {
+    const fa = a.fechaSalida || "", fb = b.fechaSalida || "";
+    if(fa !== fb) return fa < fb ? 1 : -1;
+    const ca = a.creadoEn?.seconds || 0, cb = b.creadoEn?.seconds || 0;
+    return cb - ca;
+  });
+}
+function mesCortes(){
+  const pref = `${state.year}-${String(state.month + 1).padStart(2, "0")}`;
+  return state.cortes.filter((c) => String(c.fechaSalida || "").startsWith(pref));
+}
+function nombreFirma(c){
+  const f = state.firmas.find((x) => x.id === c.firmaId);
+  return f ? f.nombre : (c.firmaNombre || "Firma");
+}
+function urgentesGlobal(){
+  return state.cortes.filter((c) => c.estadoPago === "por_cobrar" && diasDesde(c.fechaSalida) > 5);
+}
+
+/* ============ Render ============ */
+function renderTodo(){
+  renderMes();
+  renderStats();
+  renderAlerta();
+  renderResumenFirmas();
+  renderFiltroFirmas();
+  renderLista();
+  renderListaFirmas();
+  renderUrgentes();
+}
+
+function renderMes(){
+  $("mesEtiqueta").textContent = mesEtiqueta();
+}
+
+function renderStats(){
+  const cs = mesCortes();
+  const total = cs.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const cobrar = cs.filter((c) => c.estadoPago === "por_cobrar").reduce((s, c) => s + (Number(c.total) || 0), 0);
+  $("statTotal").textContent = fmtBRL(total);
+  $("statCobrar").textContent = fmtBRL(cobrar);
+  $("statCant").textContent = String(cs.length);
+  $("statTicket").textContent = fmtBRL(cs.length ? total / cs.length : 0);
+}
+
+function renderAlerta(){
+  const cont = $("alertaUrgente");
+  const urgs = urgentesGlobal();
+  if(urgs.length === 0){ cont.classList.add("oculto"); cont.innerHTML = ""; return; }
+  const totalUrgs = urgs.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  cont.classList.remove("oculto");
+  cont.innerHTML = `
+    <div class="alerta-icono">!</div>
+    <div class="alerta-texto">
+      <h3>Cobro urgente</h3>
+      <p>${urgs.length} corte${urgs.length === 1 ? "" : "s"} por cobrar con más de 5 días · ${fmtBRL(totalUrgs)}</p>
+    </div>
+    <button id="btnVerUrgentes" type="button">Ver</button>`;
+  $("btnVerUrgentes").addEventListener("click", () => {
+    renderUrgentes();
+    abrirHoja("overlayUrgente");
+  });
+}
+
+function renderResumenFirmas(){
+  const cont = $("resumenFirmas");
+  const cs = mesCortes();
+  if(cs.length === 0){
+    cont.innerHTML = state.firmas.length === 0
+      ? '<p class="hint">Aún no hay firmas registradas. Abre el menú y entra en «Gestionar firmas» para crear la primera.</p>'
+      : `<p class="hint">Sin cortes en ${esc(mesEtiqueta())}.</p>`;
+    return;
+  }
+  const grupos = new Map();
+  cs.forEach((c) => {
+    const k = c.firmaId || c.firmaNombre || "-";
+    const g = grupos.get(k) || { nombre: nombreFirma(c), n: 0, total: 0, cobrar: 0 };
+    g.n++;
+    g.total += Number(c.total) || 0;
+    if(c.estadoPago === "por_cobrar") g.cobrar += Number(c.total) || 0;
+    grupos.set(k, g);
+  });
+  cont.innerHTML = [...grupos.values()].sort((a, b) => b.total - a.total).map((g, i) => `
+    <div class="fila-firma">
+      <div class="avatar-firma av-${i % 4}">${esc((g.nombre || "?").charAt(0).toUpperCase())}</div>
+      <div class="ff-info">
+        <div class="nombre">${esc(g.nombre)}</div>
+        <div class="sub">${g.n} corte${g.n === 1 ? "" : "s"}${g.cobrar > 0 ? ` · <b class="sub-cobrar">${fmtBRL(g.cobrar)} por cobrar</b>` : ""}</div>
+      </div>
+      <div class="monto">${fmtBRL(g.total)}</div>
+    </div>`).join("");
+}
+
+function renderFiltroFirmas(){
+  const sel = $("filtroFirma");
+  sel.innerHTML = '<option value="todas">Todas las firmas</option>' +
+    state.firmas.map((f) => `<option value="${f.id}">${esc(f.nombre)}</option>`).join("");
+  if(state.firmaFilter !== "todas" && !state.firmas.some((f) => f.id === state.firmaFilter)){
+    state.firmaFilter = "todas";
+  }
+  sel.value = state.firmaFilter;
+}
+
+function tarjetaCorte(c){
+  const badge = c.estadoPago === "pagado"
+    ? '<span class="insignia pagado">✓ Pagado</span>'
+    : '<span class="insignia por_cobrar">$ Por cobrar</span>';
+  const obs = String(c.observacion || "").trim();
+  return `
+  <article class="corte">
+    <div class="corte-top">
+      <div class="corte-info">
+        <div class="corte-prenda">${esc(c.tipoPrenda || "Sin nombre")}</div>
+        <div class="corte-firma">${esc(nombreFirma(c))} · ${relEtiqueta(c.fechaSalida)}</div>
+      </div>
+      ${badge}
+    </div>
+    <div class="corte-medio">
+      <span class="corte-detalle">${Number(c.cantidad) || 0} piezas × ${fmtBRL(c.valorPorPieza)}</span>
+      <span class="corte-total">${fmtBRL(c.total)}</span>
+    </div>
+    <div class="corte-fecha">Salida: ${fmtFecha(c.fechaSalida)}</div>
+    ${obs ? `<div class="corte-obs">${esc(obs)}</div>` : ""}
+    <div class="corte-acciones">
+      ${c.estadoPago === "por_cobrar" ? `<button class="btn-a btn-pagar" data-acc="pagar" data-id="${c.id}" type="button">✓ Marcar pagado</button>` : ""}
+      <button class="btn-a btn-editar" data-acc="editar" data-id="${c.id}" type="button">Editar</button>
+      <button class="btn-a btn-borrar" data-acc="borrar" data-id="${c.id}" type="button">Borrar</button>
+    </div>
+  </article>`;
+}
+
+function renderLista(){
+  const cont = $("listaCortes");
+  if(state.errorCarga){
+    cont.innerHTML = `<div class="estado">${SVG_ALERTA}<h3>No se pudieron cargar los cortes</h3><p>Verifica tu conexión a internet.</p><button id="btnReintentar" class="btn-reintentar" type="button">Reintentar</button></div>`;
+    $("btnReintentar").addEventListener("click", cargarTodo);
+    return;
+  }
+  if(!state.cargado){
+    cont.innerHTML = '<div class="estado"><div class="spinner"></div><p>Cargando cortes...</p></div>';
+    return;
+  }
+  if(state.cortes.length === 0){
+    cont.innerHTML = `<div class="estado">${SVG_TIJERAS}<h3>No hay cortes registrados todavía.</h3><p>Registra tu primer corte para comenzar.</p></div>`;
+    return;
+  }
+  const delMes = mesCortes();
+  if(delMes.length === 0){
+    cont.innerHTML = `<div class="estado"><h3>No hay cortes en ${esc(mesEtiqueta())}</h3><p>Usa el botón + para registrar el primer corte de este mes.</p></div>`;
+    return;
+  }
+  let cs = delMes;
+  const q = state.search.trim().toLowerCase();
+  if(q){
+    cs = cs.filter((c) =>
+      String(c.tipoPrenda || "").toLowerCase().includes(q) ||
+      nombreFirma(c).toLowerCase().includes(q)
+    );
+  }
+  if(state.firmaFilter !== "todas") cs = cs.filter((c) => c.firmaId === state.firmaFilter);
+  if(state.pagoFilter !== "todos") cs = cs.filter((c) => c.estadoPago === state.pagoFilter);
+  cs = ordenarCortes(cs);
+  if(cs.length === 0){
+    cont.innerHTML = '<div class="estado"><h3>Sin resultados</h3><p>No se encontraron cortes con esos filtros.</p></div>';
+    return;
+  }
+  cont.innerHTML = cs.map(tarjetaCorte).join("");
+}
+
+function renderListaFirmas(){
+  const cont = $("listaFirmas");
+  if(state.firmas.length === 0){
+    cont.innerHTML = '<div class="estado"><p>No hay firmas registradas todavía.<br>Agrega la primera con el botón de abajo.</p></div>';
+    return;
+  }
+  const recuento = {};
+  state.cortes.forEach((c) => { if(c.firmaId) recuento[c.firmaId] = (recuento[c.firmaId] || 0) + 1; });
+  cont.innerHTML = state.firmas.map((f) => {
+    const n = recuento[f.id] || 0;
+    return `
+    <div class="fila-gestion">
+      <div class="avatar-firma av-0">${esc((f.nombre || "?").charAt(0).toUpperCase())}</div>
+      <div class="fg-info">
+        <div class="fg-nombre">${esc(f.nombre)}</div>
+        <div class="fg-sub">${f.cnpj ? `CNPJ: ${esc(f.cnpj)} · ` : ""}${n} corte${n === 1 ? "" : "s"}</div>
+      </div>
+      <div class="fg-btns">
+        <button class="btn-mini btn-mini-editar" data-facc="editar" data-id="${f.id}" type="button">Editar</button>
+        <button class="btn-mini btn-mini-borrar" data-facc="borrar" data-id="${f.id}" type="button">Borrar</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderUrgentes(){
+  const cont = $("listaUrgentes");
+  const urgs = ordenarCortes(urgentesGlobal()).reverse(); // los más antiguos primero
+  if(urgs.length === 0){
+    cont.innerHTML = '<div class="estado"><p>No hay pagos urgentes. ¡Todo al día!</p></div>';
+    return;
+  }
+  cont.innerHTML = urgs.map((c) => `
+    <div class="fila-urgente">
+      <div class="fu-top">
+        <span class="fu-prenda">${esc(c.tipoPrenda || "Sin nombre")}</span>
+        <span class="fu-monto">${fmtBRL(c.total)}</span>
+      </div>
+      <div class="fu-meta">${esc(nombreFirma(c))} · Salida: ${fmtFecha(c.fechaSalida)} · ${relEtiqueta(c.fechaSalida)}</div>
+      <button class="btn-a btn-pagar" data-uacc="pagar" data-id="${c.id}" type="button">✓ Marcar pagado</button>
+    </div>`).join("");
+}
+
+/* ============ Carga de datos ============ */
+async function recargarCortes(){
+  const snap = await getDocs(collection(db, "cortes"));
+  state.cortes = ordenarCortes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  renderTodo();
+}
+async function recargarFirmas(){
+  const snap = await getDocs(collection(db, "firmas"));
+  state.firmas = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es"));
+  renderTodo();
+}
+async function cargarTodo(){
+  state.cargado = false;
+  state.errorCarga = false;
+  renderLista();
+  try{
+    const [fs, cs] = await Promise.all([
+      getDocs(collection(db, "firmas")),
+      getDocs(collection(db, "cortes"))
+    ]);
+    state.firmas = fs.docs.map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es"));
+    state.cortes = ordenarCortes(cs.docs.map((d) => ({ id: d.id, ...d.data() })));
+    state.cargado = true;
+  }catch(err){
+    console.error("Error al cargar datos:", err);
+    state.cargado = true;
+    state.errorCarga = true;
+  }
+  renderTodo();
+}
+/* ============ Hojas / Toast / Confirmación ============ */
+function abrirHoja(id){
+  $(id).classList.add("open");
+  document.body.classList.add("bloqueado");
+}
+function cerrarHoja(id){
+  $(id).classList.remove("open");
+  if(!document.querySelector(".overlay.open")) document.body.classList.remove("bloqueado");
+}
+let toastTimer = null;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("ver");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("ver"), 3000);
+}
+let confirmAccion = null;
+function confirmar(msg, txtOk, accion){
+  $("confirmMsg").textContent = msg;
+  $("btnConfirmOk").textContent = txtOk;
+  confirmAccion = accion;
+  abrirHoja("overlayConfirm");
+}
+
+/* ============ Formulario de corte ============ */
+function poblarSelFirma(firmaId = null, nombreFallback = ""){
+  const sel = $("selFirma");
+  if(state.firmas.length === 0){
+    sel.innerHTML = '<option value="">Sin firmas registradas</option>';
+    return;
+  }
+  let html = '<option value="">Selecciona una firma</option>' +
+    state.firmas.map((f) => `<option value="${f.id}">${esc(f.nombre)}</option>`).join("");
+  if(firmaId && !state.firmas.some((f) => f.id === firmaId)){
+    html += `<option value="${esc(firmaId)}">${esc(nombreFallback || "Firma eliminada")}</option>`;
+  }
+  sel.innerHTML = html;
+  if(firmaId) sel.value = firmaId;
+}
+function setEstadoForm(estado){
+  state.estadoForm = estado === "pagado" ? "pagado" : "por_cobrar";
+  $("btnEstPagado").classList.toggle("sel-pagado", state.estadoForm === "pagado");
+  $("btnEstCobrar").classList.toggle("sel-cobrar", state.estadoForm === "por_cobrar");
+}
+function actualizarTotalVista(){
+  const c = parseNum($("inpCantidad").value);
+  const v = parseNum($("inpValor").value);
+  $("totalVista").textContent = fmtBRL(c > 0 && v > 0 ? c * v : 0);
+}
+function abrirFormNuevo(){
+  state.editandoCorteId = null;
+  $("formTitulo").textContent = "Nuevo corte";
+  $("btnGuardarCorte").textContent = "Guardar corte";
+  $("btnSecCorte").textContent = "Limpiar";
+  $("formCorte").reset();
+  poblarSelFirma();
+  setEstadoForm("por_cobrar");
+  $("inpFecha").value = hoyISO();
+  $("avisoSinFirmas").classList.toggle("oculto", state.firmas.length > 0);
+  actualizarTotalVista();
+  abrirHoja("overlayForm");
+}
+function abrirFormEditar(corteId){
+  const c = state.cortes.find((x) => x.id === corteId);
+  if(!c) return;
+  state.editandoCorteId = corteId;
+  $("formTitulo").textContent = "Editar corte";
+  $("btnGuardarCorte").textContent = "Guardar cambios";
+  $("btnSecCorte").textContent = "Cancelar";
+  $("avisoSinFirmas").classList.add("oculto");
+  poblarSelFirma(c.firmaId, c.firmaNombre || "");
+  $("inpPrenda").value = c.tipoPrenda || "";
+  $("inpCantidad").value = c.cantidad ?? "";
+  $("inpValor").value = c.valorPorPieza != null ? Number(c.valorPorPieza).toFixed(2).replace(".", ",") : "";
+  $("inpFecha").value = c.fechaSalida || hoyISO();
+  $("inpObs").value = c.observacion || "";
+  setEstadoForm(c.estadoPago);
+  actualizarTotalVista();
+  abrirHoja("overlayForm");
+}
+
+/* ============ Gestión de firmas ============ */
+function abrirFirmas(){
+  cerrarFormFirma();
+  renderListaFirmas();
+  abrirHoja("overlayFirmas");
+}
+function mostrarFormFirma(f){
+  state.editandoFirmaId = f ? f.id : null;
+  $("formFirma").classList.remove("oculto");
+  $("inpNombreFirma").value = f ? (f.nombre || "") : "";
+  $("inpCnpjFirma").value = f ? (f.cnpj || "") : "";
+  $("btnGuardarFirma").textContent = f ? "Guardar cambios" : "Guardar firma";
+  $("btnNuevaFirma").textContent = "Cerrar formulario";
+  $("inpNombreFirma").focus();
+}
+function cerrarFormFirma(){
+  state.editandoFirmaId = null;
+  $("formFirma").classList.add("oculto");
+  $("btnNuevaFirma").textContent = "+ Nueva firma";
+}
+
+/* ============ Acciones ============ */
+async function marcarPagado(id){
+  try{
+    await updateDoc(doc(db, "cortes", id), { estadoPago: "pagado" });
+    await recargarCortes();
+    toast("Pago actualizado.");
+  }catch(err){
+    console.error(err);
+    toast("No se pudo actualizar. Intenta de nuevo.");
+  }
+}
+function borrarCorte(id){
+  confirmar("¿Seguro que quieres borrar este corte?", "Borrar", async () => {
+    try{
+      await deleteDoc(doc(db, "cortes", id));
+      await recargarCortes();
+      toast("Corte eliminado.");
+    }catch(err){
+      console.error(err);
+      toast("No se pudo borrar. Intenta de nuevo.");
+    }
+  });
+}
+function borrarFirma(f){
+  confirmar(`¿Eliminar la firma "${f.nombre}"? Los cortes ya registrados no se modificarán.`, "Eliminar", async () => {
+    try{
+      await deleteDoc(doc(db, "firmas", f.id));
+      if(state.firmaFilter === f.id) state.firmaFilter = "todas";
+      await recargarFirmas();
+      toast("Firma eliminada.");
+    }catch(err){
+      console.error(err);
+      toast("No se pudo eliminar la firma.");
+    }
+  });
+}
+
+/* ============ Eventos ============ */
+$("btnMenu").addEventListener("click", () => abrirHoja("overlayMenu"));
+document.querySelectorAll(".menu-item").forEach((b) => {
+  b.addEventListener("click", () => {
+    cerrarHoja("overlayMenu");
+    const a = b.dataset.menu;
+    if(a === "firmas") abrirFirmas();
+    if(a === "ayuda") abrirHoja("overlayAyuda");
+    if(a === "acerca") abrirHoja("overlayAcerca");
+  });
+});
+$("fab").addEventListener("click", abrirFormNuevo);
+
+$("btnMesAnt").addEventListener("click", () => {
+  state.month--;
+  if(state.month < 0){ state.month = 11; state.year--; }
+  renderTodo();
+});
+$("btnMesSig").addEventListener("click", () => {
+  state.month++;
+  if(state.month > 11){ state.month = 0; state.year++; }
+  renderTodo();
+});
+
+$("inpBuscar").addEventListener("input", (e) => { state.search = e.target.value; renderLista(); });
+$("filtroFirma").addEventListener("change", (e) => { state.firmaFilter = e.target.value; renderLista(); });
+$("filtroPago").addEventListener("change", (e) => { state.pagoFilter = e.target.value; renderLista(); });
+
+/* Delegación: lista de cortes */
+$("listaCortes").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-acc]");
+  if(!b) return;
+  if(b.dataset.acc === "pagar") marcarPagado(b.dataset.id);
+  if(b.dataset.acc === "editar") abrirFormEditar(b.dataset.id);
+  if(b.dataset.acc === "borrar") borrarCorte(b.dataset.id);
+});
+/* Delegación: pagos urgentes */
+$("listaUrgentes").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-uacc]");
+  if(b && b.dataset.uacc === "pagar") marcarPagado(b.dataset.id);
+});
+/* Delegación: gestión de firmas */
+$("listaFirmas").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-facc]");
+  if(!b) return;
+  const f = state.firmas.find((x) => x.id === b.dataset.id);
+  if(!f) return;
+  if(b.dataset.facc === "editar") mostrarFormFirma(f);
+  if(b.dataset.facc === "borrar") borrarFirma(f);
+});
+
+/* Guardar corte (crear o editar) */
+$("formCorte").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const firmaId = $("selFirma").value;
+  const prenda = $("inpPrenda").value.trim();
+  const cantidad = parseNum($("inpCantidad").value);
+  const valor = parseNum($("inpValor").value);
+  const fecha = $("inpFecha").value;
+  if(!firmaId){ toast("Selecciona una firma."); return; }
+  if(!prenda){ toast("Ingresa el tipo de prenda."); return; }
+  if(!(cantidad > 0)){ toast("La cantidad debe ser mayor que 0."); return; }
+  if(!(valor > 0)){ toast("El valor por pieza debe ser mayor que 0."); return; }
+  if(!fecha){ toast("Selecciona la fecha de salida."); return; }
+  const firma = state.firmas.find((f) => f.id === firmaId);
+  const total = Math.round(cantidad * valor * 100) / 100;
+  const datos = {
+    firmaId,
+    firmaNombre: firma ? firma.nombre : "",
+    tipoPrenda: prenda,
+    cantidad,
+    valorPorPieza: valor,
+    total,
+    fechaSalida: fecha,
+    observacion: $("inpObs").value.trim(),
+    estadoPago: state.estadoForm
+  };
+  const btn = $("btnGuardarCorte");
+  btn.disabled = true;
+  try{
+    if(state.editandoCorteId){
+      await updateDoc(doc(db, "cortes", state.editandoCorteId), datos);
+      await recargarCortes();
+      cerrarHoja("overlayForm");
+      toast("Corte actualizado correctamente.");
+    }else{
+      await addDoc(collection(db, "cortes"), { ...datos, fechaEntrada: "", creadoEn: serverTimestamp() });
+      await recargarCortes();
+      cerrarHoja("overlayForm");
+      toast("Corte guardado correctamente.");
+    }
+  }catch(err){
+    console.error(err);
+    toast("No se pudo guardar. Verifica tu conexión a internet.");
+  }finally{
+    btn.disabled = false;
+  }
+});
+$("btnSecCorte").addEventListener("click", () => {
+  if(state.editandoCorteId){ cerrarHoja("overlayForm"); return; }
+  $("formCorte").reset();
+  poblarSelFirma();
+  setEstadoForm("por_cobrar");
+  $("inpFecha").value = hoyISO();
+  $("avisoSinFirmas").classList.toggle("oculto", state.firmas.length > 0);
+  actualizarTotalVista();
+});
+$("btnEstPagado").addEventListener("click", () => setEstadoForm("pagado"));
+$("btnEstCobrar").addEventListener("click", () => setEstadoForm("por_cobrar"));
+$("inpCantidad").addEventListener("input", actualizarTotalVista);
+$("inpValor").addEventListener("input", actualizarTotalVista);
+$("btnIrFirmas").addEventListener("click", () => { cerrarHoja("overlayForm"); abrirFirmas(); });
+
+/* Guardar firma (crear o editar) */
+$("btnNuevaFirma").addEventListener("click", () => {
+  const abierto = !$("formFirma").classList.contains("oculto") && state.editandoFirmaId === null;
+  if(abierto) cerrarFormFirma();
+  else mostrarFormFirma(null);
+});
+$("btnCancelarFirma").addEventListener("click", cerrarFormFirma);
+$("formFirma").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const nombre = $("inpNombreFirma").value.trim();
+  const cnpj = $("inpCnpjFirma").value.trim();
+  if(!nombre){ toast("Ingresa el nombre de la firma."); return; }
+  const btn = $("btnGuardarFirma");
+  btn.disabled = true;
+  try{
+    if(state.editandoFirmaId){
+      await updateDoc(doc(db, "firmas", state.editandoFirmaId), { nombre, cnpj });
+      await recargarFirmas();
+      toast("Firma actualizada correctamente.");
+    }else{
+      await addDoc(collection(db, "firmas"), { nombre, cnpj, creadoEn: serverTimestamp() });
+      await recargarFirmas();
+      toast("Firma guardada correctamente.");
+    }
+    cerrarFormFirma();
+  }catch(err){
+    console.error(err);
+    toast("No se pudo guardar la firma.");
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+/* Confirmación genérica */
+$("btnConfirmOk").addEventListener("click", async () => {
+  const accion = confirmAccion;
+  confirmAccion = null;
+  if(!accion){ cerrarHoja("overlayConfirm"); return; }
+  $("btnConfirmOk").disabled = true;
+  try{
+    await accion();
+  }finally{
+    $("btnConfirmOk").disabled = false;
+    cerrarHoja("overlayConfirm");
+  }
+});
+$("btnConfirmCancelar").addEventListener("click", () => {
+  confirmAccion = null;
+  cerrarHoja("overlayConfirm");
+});
+
+/* Cerrar hojas: clic en el fondo y botones Cerrar */
+["overlayMenu","overlayForm","overlayFirmas","overlayUrgente","overlayAyuda","overlayAcerca","overlayConfirm"].forEach((id) => {
+  $(id).addEventListener("click", (e) => { if(e.target === $(id)) cerrarHoja(id); });
+});
+document.querySelectorAll("[data-cerrar]").forEach((b) => {
+  b.addEventListener("click", () => cerrarHoja(b.dataset.cerrar));
+});
+
+/* ============ Inicio (no se crea nada automáticamente) ============ */
+cargarTodo();
+</script>
+</body>
+</html>
